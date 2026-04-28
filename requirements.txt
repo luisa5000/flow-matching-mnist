@@ -11,3 +11,5 @@ matplotlib
 seaborn
 tensorboard
 torchmetrics[image]
+flask>=3.0.0
+requests>=2.31.0
