@@ -32,7 +32,13 @@ def main(cfg: DictConfig):
     logger.info(f"Loading MNIST dataset from {cfg.data.data_dir}")
     train_data = datasets.MNIST(cfg.data.data_dir, train=True, download=True, transform=transform)
     test_data = datasets.MNIST(cfg.data.data_dir, train=False, transform=transform)
-    
+
+    if cfg.data.digits is not None:
+        digits = set(cfg.data.digits)
+        train_data = torch.utils.data.Subset(train_data, [i for i, (_, y) in enumerate(train_data) if y in digits])
+        test_data = torch.utils.data.Subset(test_data, [i for i, (_, y) in enumerate(test_data) if y in digits])
+        logger.info(f"Filtered to digits {sorted(digits)}")
+
     logger.info(f"Train dataset size: {len(train_data)}, Test dataset size: {len(test_data)}")
     logger.info(f"Batch size: {cfg.data.batch_size}")
     

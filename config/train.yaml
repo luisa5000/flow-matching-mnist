@@ -7,6 +7,7 @@ defaults:
 data:
   data_dir: ${hydra:runtime.cwd}/data
   batch_size: 32
+  digits: null  # list of digits to train on, e.g. [0, 1, 2]; null means all
 
 # Training configuration
 training:
