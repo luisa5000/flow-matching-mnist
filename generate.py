@@ -42,8 +42,7 @@ def main():
     
     # Load model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = ImageFlowMatcher()
-    model.load_state_dict(torch.load(args.checkpoint, map_location=device))
+    model = ImageFlowMatcher.load_from_checkpoint(args.checkpoint)
     model.to(device)
     model.eval()
 
