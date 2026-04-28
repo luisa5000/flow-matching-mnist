@@ -1,25 +1,20 @@
 """
-Dispatcher server that forwards digit generation requests to backend servers
+Dispatcher CLI that forwards digit generation requests to backend servers
 according to a mapping file.
 
 Usage:
-    python dispatcher.py --mapping digit_mapping.json [--port 8000]
+    python dispatcher.py [--mapping digit_mapping.json] [--output_dir generated]
 
 Mapping file format (JSON):
-    { "0": "http://host1:5000", "1": "http://host1:5000", ..., "5": "http://host2:5000", ... }
+    { "0": "http://host1:5000", ..., "5": "http://host2:5000", ... }
 
-Request:
-    GET /generate?digit=3
-
-Response:
-    PNG image proxied from the appropriate backend server.
+At the prompt, enter a digit (0-9) to generate an image, or 'q' to quit.
 """
 
 import argparse
 import json
-import sys
+import os
 import requests
-from flask import Flask, request, Response, jsonify
 
 
 def load_mapping(path: str) -> dict[str, str]:
@@ -31,47 +26,58 @@ def load_mapping(path: str) -> dict[str, str]:
     return mapping
 
 
-def create_app(mapping_path: str) -> Flask:
-    mapping = load_mapping(mapping_path)
-    print("Digit routing:")
-    for digit, server in sorted(mapping.items()):
-        print(f"  {digit} -> {server}")
+def request_digit(digit_str: str, mapping: dict[str, str], output_dir: str) -> None:
+    if digit_str not in mapping:
+        print(f"Error: digit '{digit_str}' is not in the mapping")
+        return
 
-    app = Flask(__name__)
+    backend = mapping[digit_str]
+    try:
+        resp = requests.get(f"{backend}/generate", params={"digit": digit_str}, timeout=60)
+    except requests.ConnectionError:
+        print(f"Error: could not reach backend {backend}")
+        return
+    except requests.Timeout:
+        print(f"Error: backend {backend} timed out")
+        return
 
-    @app.get("/generate")
-    def generate():
-        digit_str = request.args.get("digit")
-        if digit_str is None:
-            return jsonify(error="'digit' query parameter is required"), 400
-        if digit_str not in mapping:
-            return jsonify(error=f"digit '{digit_str}' is not in the mapping"), 400
+    if resp.status_code != 200:
+        print(f"Error: backend returned {resp.status_code}: {resp.text}")
+        return
 
-        backend = mapping[digit_str]
-        try:
-            resp = requests.get(f"{backend}/generate", params={"digit": digit_str}, timeout=60)
-        except requests.ConnectionError:
-            return jsonify(error=f"could not reach backend {backend}"), 502
-        except requests.Timeout:
-            return jsonify(error=f"backend {backend} timed out"), 504
-
-        return Response(
-            resp.content,
-            status=resp.status_code,
-            content_type=resp.headers.get("Content-Type", "application/octet-stream"),
-        )
-
-    return app
+    out_path = os.path.join(output_dir, f"digit_{digit_str}.png")
+    with open(out_path, "wb") as f:
+        f.write(resp.content)
+    print(f"Saved -> {out_path}  (via {backend})")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Digit generation dispatcher")
     parser.add_argument("--mapping", type=str, default="digit_mapping.json", help="Path to digit-to-server mapping JSON")
-    parser.add_argument("--port", type=int, default=8000, help="Port to listen on")
+    parser.add_argument("--output_dir", type=str, default="~/Downloads/generated", help="Directory to save generated images")
     args = parser.parse_args()
 
-    app = create_app(args.mapping)
-    app.run(host="0.0.0.0", port=args.port)
+    mapping = load_mapping(args.mapping)
+    os.makedirs(args.output_dir, exist_ok=True)
+
+    print("Digit routing:")
+    for digit, server in sorted(mapping.items()):
+        print(f"  {digit} -> {server}")
+    print("\nEnter a digit (0-9) to generate, or 'q' to quit.")
+
+    while True:
+        try:
+            user_input = input("digit> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+
+        if user_input.lower() in ("q", "quit", "exit"):
+            break
+        if not user_input:
+            continue
+
+        request_digit(user_input, mapping, args.output_dir)
 
 
 if __name__ == "__main__":
