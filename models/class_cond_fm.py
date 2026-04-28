@@ -231,27 +231,27 @@ class ImageFlowMatcherClassCond(ImageFlowMatcher):
             batch_idx (int): Index of this validation batch.
         """
         # Extract images (labels are not used)
-        batch_images, y = batch
-        logger.debug(f"Validation step - batch_images shape: {batch_images.shape}, y shape: {y.shape}")
+        # batch_images, y = batch
+        # logger.debug(f"Validation step - batch_images shape: {batch_images.shape}, y shape: {y.shape}")
         
-        if y.ndim == 1:
-            y = F.one_hot(y, self.num_classes)
-        # Normalize images for consistency
-        if self.normalize_data:
-            batch_images = batch_images * 2.0 - 1.0
+        # if y.ndim == 1:
+        #     y = F.one_hot(y, self.num_classes)
+        # # Normalize images for consistency
+        # if self.normalize_data:
+        #     batch_images = batch_images * 2.0 - 1.0
 
-        # (Optional) Generate sample images on the first validation batch of each epoch
-        sample_images = self.generate(batch_size=len(batch_images), num_steps=10)
-        logger.debug(f"Validation step - sample_images shape: {sample_images.shape}")
+        # # (Optional) Generate sample images on the first validation batch of each epoch
+        # sample_images = self.generate(batch_size=len(batch_images), num_steps=10)
+        # logger.debug(f"Validation step - sample_images shape: {sample_images.shape}")
         
-        grid = torchvision.utils.make_grid(sample_images, nrow=int(sqrt(len(sample_images))), normalize=False, value_range=(0, 1))
-        logger.debug(f"Validation step - grid shape: {grid.shape}")
+        # grid = torchvision.utils.make_grid(sample_images, nrow=int(sqrt(len(sample_images))), normalize=False, value_range=(0, 1))
+        # logger.debug(f"Validation step - grid shape: {grid.shape}")
         
-        if batch_idx == 0:
-            self.logger.experiment.add_image('generated_images', grid, self.current_epoch)
+        # if batch_idx == 0:
+        #     self.logger.experiment.add_image('generated_images', grid, self.current_epoch)
 
-        generated_images_rgb = sample_images.repeat(1, 3, 1, 1)  # Convert to RGB
-        logger.debug(f"Validation step - generated_images_rgb shape: {generated_images_rgb.shape}")
+        # generated_images_rgb = sample_images.repeat(1, 3, 1, 1)  # Convert to RGB
+        # logger.debug(f"Validation step - generated_images_rgb shape: {generated_images_rgb.shape}")
 
         # Update FID with real and generated images
         # self.fid.update(real_images, real=True)
