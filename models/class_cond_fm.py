@@ -83,8 +83,8 @@ class ImageFlowMatcherClassCond(ImageFlowMatcher):
         # Mean-squared error loss. We compare predicted velocity to dx(t)/dt from the path.
         self.criterion = nn.MSELoss()
 
-        # FID metric for evaluation
-        self.fid = load_fid_with_real_features(device=self.device)
+        # # FID metric for evaluation
+        # self.fid = load_fid_with_real_features(device=self.device)
 
 
     def forward(self, x_t: torch.Tensor, t: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -255,13 +255,14 @@ class ImageFlowMatcherClassCond(ImageFlowMatcher):
 
         # Update FID with real and generated images
         # self.fid.update(real_images, real=True)
-        self.fid.update(generated_images_rgb, real=False)
+        # self.fid.update(generated_images_rgb, real=False)
         
     def on_validation_epoch_end(self) -> None:
-        fid_score = self.fid.compute()
-        self.log('fid_score', fid_score, prog_bar=True, logger=True)
-        self.fid.reset_real_features = False
-        self.fid.reset()
+        # fid_score = self.fid.compute()
+        # self.log('fid_score', fid_score, prog_bar=True, logger=True)
+        # self.fid.reset_real_features = False
+        # self.fid.reset()
+        pass
 
     def configure_optimizers(self):
         """
